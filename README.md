@@ -1,4 +1,4 @@
-# SOC Threat Investigation Platform — Phase 5
+# SOC Threat Investigation Platform
 
 ## Quick Start
 

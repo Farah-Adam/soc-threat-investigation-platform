@@ -1,4 +1,57 @@
-# SOC Threat Investigation Platform
+# 🔐 SOC Threat Investigation Platform
+
+A modular Security Operations Center (SOC) simulation platform designed to replicate real-world cyber threat detection workflows including log analysis, network scanning, packet inspection, and threat intelligence correlation.
+
+---
+
+## 🧠 Why this project matters
+
+Modern SOC teams rely on multiple tools (SIEM, IDS, Threat Intel platforms) to detect and respond to attacks.
+
+This project demonstrates how these capabilities can be implemented in a unified system using Python, providing a hands-on understanding of:
+
+* Threat detection pipelines
+* Attack pattern recognition
+* Network reconnaissance analysis
+* Incident investigation workflows
+
+---
+
+## 🚀 Core Capabilities
+
+* 🔍 Detect brute-force and credential attacks from system logs
+* 🌐 Identify exposed services via multi-threaded port scanning
+* 📡 Analyze network traffic for SQLi, XSS, and reverse shells
+* 🧠 Correlate IPs with real-world threat intelligence feeds
+* 🖥 Provide a unified SOC dashboard with reporting
+
+---
+
+## 🏗 Architecture
+
+This project follows a **modular monolith architecture** where:
+
+* Independent detection engines operate as modules
+* Flask acts as an orchestration layer
+* SQLite is used for lightweight persistence
+
+---
+
+## 🎯 Real-World Relevance
+
+This platform simulates core responsibilities of:
+
+* SOC Analyst
+* Security Engineer
+* Incident Responder
+
+It mirrors workflows used in real environments such as:
+
+* Log analysis → Detection
+* Network scan → Exposure assessment
+* Packet inspection → Threat validation
+* Threat intel → Correlation
+
 
 ## Quick Start
 

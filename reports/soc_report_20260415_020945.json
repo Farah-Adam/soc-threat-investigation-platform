@@ -1,0 +1,122 @@
+{
+  "log": null,
+  "scan": {
+    "critical_count": 4,
+    "high_count": 3,
+    "host": "192.168.157.129",
+    "open_count": 11,
+    "ports": [
+      {
+        "banner": "\ufffd\ufffd\u0018\ufffd\ufffd \ufffd\ufffd#\ufffd\ufffd'",
+        "port": 23,
+        "reason": "Cleartext remote shell \u2014 replace with SSH",
+        "risk": "CRITICAL",
+        "service": "Telnet"
+      },
+      {
+        "banner": "",
+        "port": 445,
+        "reason": "EternalBlue / ransomware vector",
+        "risk": "CRITICAL",
+        "service": "SMB"
+      },
+      {
+        "banner": ">\u0000\u0000\u0000",
+        "port": 3306,
+        "reason": "Database \u2014 should never be internet-facing",
+        "risk": "CRITICAL",
+        "service": "MySQL"
+      },
+      {
+        "banner": "",
+        "port": 5432,
+        "reason": "Database \u2014 restrict to localhost only",
+        "risk": "CRITICAL",
+        "service": "PostgreSQL"
+      },
+      {
+        "banner": "220 (vsFTPd 2.3.4)",
+        "port": 21,
+        "reason": "Cleartext file transfer \u2014 credentials exposed",
+        "risk": "HIGH",
+        "service": "FTP"
+      },
+      {
+        "banner": "",
+        "port": 139,
+        "reason": "Legacy SMB \u2014 many known vulnerabilities",
+        "risk": "HIGH",
+        "service": "NetBIOS"
+      },
+      {
+        "banner": "RFB 003.003",
+        "port": 5900,
+        "reason": "Cleartext remote desktop \u2014 enforce auth",
+        "risk": "HIGH",
+        "service": "VNC"
+      },
+      {
+        "banner": "SSH-2.0-OpenSSH_4.7p1 Debian-8ubuntu1",
+        "port": 22,
+        "reason": "Encrypted shell \u2014 monitor for brute-force",
+        "risk": "MEDIUM",
+        "service": "SSH"
+      },
+      {
+        "banner": "220 metasploitable.localdomain ESMTP Postfix (Ubuntu)",
+        "port": 25,
+        "reason": "Mail relay \u2014 check for open relay",
+        "risk": "MEDIUM",
+        "service": "SMTP"
+      },
+      {
+        "banner": "",
+        "port": 53,
+        "reason": "DNS \u2014 check zone transfer & amplification",
+        "risk": "MEDIUM",
+        "service": "DNS"
+      },
+      {
+        "banner": "HTTP/1.1 200 OK",
+        "port": 80,
+        "reason": "Cleartext web \u2014 check for sensitive pages",
+        "risk": "MEDIUM",
+        "service": "HTTP"
+      }
+    ],
+    "scanned_at": "2026-04-15T02:06:32.390987"
+  },
+  "packet": null,
+  "threat": {
+    "critical": 0,
+    "matched": 0,
+    "results": [
+      {
+        "category": "No known threat",
+        "country": "Unknown",
+        "ip": "192.168.157.129",
+        "source": "Not in feed",
+        "status": "CLEAN",
+        "threat": "LOW"
+      },
+      {
+        "category": "No known threat",
+        "country": "Unknown",
+        "ip": "192.168.157.109",
+        "source": "Not in feed",
+        "status": "CLEAN",
+        "threat": "LOW"
+      },
+      {
+        "category": "No known threat",
+        "country": "Unknown",
+        "ip": "192.168.1.0",
+        "source": "Not in feed",
+        "status": "CLEAN",
+        "threat": "LOW"
+      }
+    ],
+    "total_checked": 3
+  },
+  "generated_at": "2026-04-14T20:39:45.255Z"
+}

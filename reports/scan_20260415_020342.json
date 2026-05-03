@@ -1,0 +1,23 @@
+{
+  "host": "8.8.8.8",
+  "scanned_at": "2026-04-15T02:03:42.543706",
+  "open_count": 2,
+  "critical_count": 0,
+  "high_count": 0,
+  "ports": [
+    {
+      "port": 53,
+      "service": "DNS",
+      "risk": "MEDIUM",
+      "reason": "DNS \u2014 check zone transfer & amplification",
+      "banner": ""
+    },
+    {
+      "port": 443,
+      "service": "HTTPS",
+      "risk": "LOW",
+      "reason": "Encrypted web \u2014 audit TLS version",
+      "banner": ""
+    }
+  ]
+}

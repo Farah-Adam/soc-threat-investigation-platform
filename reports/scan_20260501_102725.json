@@ -1,0 +1,86 @@
+{
+  "host": "192.168.157.129",
+  "scanned_at": "2026-05-01T10:27:25.394762",
+  "open_count": 11,
+  "critical_count": 4,
+  "high_count": 3,
+  "ports": [
+    {
+      "port": 23,
+      "service": "Telnet",
+      "risk": "CRITICAL",
+      "reason": "Cleartext remote shell \u2014 replace with SSH",
+      "banner": "\ufffd\ufffd\u0018\ufffd\ufffd \ufffd\ufffd#\ufffd\ufffd'"
+    },
+    {
+      "port": 445,
+      "service": "SMB",
+      "risk": "CRITICAL",
+      "reason": "EternalBlue / ransomware vector",
+      "banner": ""
+    },
+    {
+      "port": 3306,
+      "service": "MySQL",
+      "risk": "CRITICAL",
+      "reason": "Database \u2014 should never be internet-facing",
+      "banner": ">\u0000\u0000\u0000"
+    },
+    {
+      "port": 5432,
+      "service": "PostgreSQL",
+      "risk": "CRITICAL",
+      "reason": "Database \u2014 restrict to localhost only",
+      "banner": ""
+    },
+    {
+      "port": 21,
+      "service": "FTP",
+      "risk": "HIGH",
+      "reason": "Cleartext file transfer \u2014 credentials exposed",
+      "banner": "220 (vsFTPd 2.3.4)"
+    },
+    {
+      "port": 139,
+      "service": "NetBIOS",
+      "risk": "HIGH",
+      "reason": "Legacy SMB \u2014 many known vulnerabilities",
+      "banner": ""
+    },
+    {
+      "port": 5900,
+      "service": "VNC",
+      "risk": "HIGH",
+      "reason": "Cleartext remote desktop \u2014 enforce auth",
+      "banner": "RFB 003.003"
+    },
+    {
+      "port": 22,
+      "service": "SSH",
+      "risk": "MEDIUM",
+      "reason": "Encrypted shell \u2014 monitor for brute-force",
+      "banner": "SSH-2.0-OpenSSH_4.7p1 Debian-8ubuntu1"
+    },
+    {
+      "port": 25,
+      "service": "SMTP",
+      "risk": "MEDIUM",
+      "reason": "Mail relay \u2014 check for open relay",
+      "banner": "220 metasploitable.localdomain ESMTP Postfix (Ubuntu)"
+    },
+    {
+      "port": 53,
+      "service": "DNS",
+      "risk": "MEDIUM",
+      "reason": "DNS \u2014 check zone transfer & amplification",
+      "banner": ""
+    },
+    {
+      "port": 80,
+      "service": "HTTP",
+      "risk": "MEDIUM",
+      "reason": "Cleartext web \u2014 check for sensitive pages",
+      "banner": "HTTP/1.1 200 OK"
+    }
+  ]
+}

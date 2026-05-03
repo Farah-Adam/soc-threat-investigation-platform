@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SOC Platform — Cyber Threat Investigation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Exo+2:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:       #080c10;
+  --bg2:      #0d1117;
+  --bg3:      #111820;
+  --border:   #1e2d3d;
+  --border2:  #2a3f54;
+  --green:    #00ff88;
+  --green2:   #00cc6a;
+  --green-dim:#003d22;
+  --amber:    #ffaa00;
+  --amber-dim:#3d2800;
+  --red:      #ff3b3b;
+  --red-dim:  #3d0a0a;
+  --blue:     #4db8ff;
+  --blue-dim: #0a2033;
+  --text:     #c8d8e8;
+  --text2:    #6888a0;
+  --text3:    #3a5066;
+  --mono:     'Share Tech Mono', monospace;
+  --sans:     'Exo 2', sans-serif;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; background: var(--bg); color: var(--text); font-family: var(--sans); overflow-x: hidden; }
+
+/* Scanline overlay */
+body::before {
+  content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 9999;
+  background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,.03) 2px, rgba(0,0,0,.03) 4px);
+}
+
+/* Layout */
+.shell { display: flex; height: 100vh; }
+.sidebar { width: 220px; flex-shrink: 0; background: var(--bg2); border-right: 1px solid var(--border); display: flex; flex-direction: column; padding: 0; }
+.main { flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
+
+/* Sidebar */
+.logo { padding: 24px 20px 20px; border-bottom: 1px solid var(--border); }
+.logo-mark { font-family: var(--mono); font-size: 11px; color: var(--green); letter-spacing: .15em; margin-bottom: 4px; }
+.logo-name { font-size: 15px; font-weight: 600; color: var(--text); letter-spacing: .04em; }
+.logo-sub  { font-size: 11px; color: var(--text3); margin-top: 2px; font-family: var(--mono); }
+
+.nav { flex: 1; padding: 12px 0; }
+.nav-section { font-size: 10px; font-weight: 500; letter-spacing: .12em; color: var(--text3); padding: 12px 20px 6px; font-family: var(--mono); }
+.nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 20px; cursor: pointer; border-left: 2px solid transparent; transition: all .15s; font-size: 13px; font-weight: 400; color: var(--text2); }
+.nav-item:hover { color: var(--text); background: rgba(0,255,136,.04); border-left-color: var(--border2); }
+.nav-item.active { color: var(--green); background: rgba(0,255,136,.06); border-left-color: var(--green); font-weight: 500; }
+.nav-icon { font-size: 14px; width: 18px; text-align: center; opacity: .7; font-family: var(--mono); }
+.nav-item.active .nav-icon { opacity: 1; }
+
+.status-bar { padding: 16px 20px; border-top: 1px solid var(--border); font-family: var(--mono); font-size: 11px; color: var(--text3); }
+.status-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--green); margin-right: 6px; animation: pulse 2s ease-in-out infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+/* Top bar */
+.topbar { display: flex; align-items: center; justify-content: space-between; padding: 16px 32px; border-bottom: 1px solid var(--border); background: var(--bg2); flex-shrink: 0; }
+.topbar-title { font-size: 18px; font-weight: 500; color: var(--text); }
+.topbar-sub   { font-size: 12px; color: var(--text3); font-family: var(--mono); margin-top: 2px; }
+.topbar-meta  { font-family: var(--mono); font-size: 11px; color: var(--text3); text-align: right; }
+.topbar-time  { font-size: 14px; color: var(--green); font-family: var(--mono); }
+
+/* Views */
+.view { display: none; padding: 32px; flex: 1; }
+.view.active { display: block; animation: fadein .2s ease; }
+@keyframes fadein { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+
+/* Section headers */
+.section-head { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 24px; }
+.section-title { font-size: 20px; font-weight: 500; color: var(--text); }
+.section-tag   { font-size: 11px; font-family: var(--mono); color: var(--green); background: var(--green-dim); padding: 3px 10px; border-radius: 3px; letter-spacing: .06em; }
+
+/* Metric grid */
+.metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 28px; }
+.metric { background: var(--bg2); border: 1px solid var(--border); border-radius: 6px; padding: 18px 20px; }
+.metric-label { font-size: 11px; font-family: var(--mono); color: var(--text3); letter-spacing: .06em; margin-bottom: 8px; }
+.metric-val   { font-size: 28px; font-weight: 300; color: var(--text); font-family: var(--mono); }
+.metric-val.green { color: var(--green); }
+.metric-val.red   { color: var(--red); }
+.metric-val.amber { color: var(--amber); }
+
+/* Cards */
+.card { background: var(--bg2); border: 1px solid var(--border); border-radius: 6px; padding: 24px; margin-bottom: 20px; }
+.card-title { font-size: 12px; font-family: var(--mono); color: var(--text3); letter-spacing: .08em; margin-bottom: 16px; }
+
+/* Upload zone */
+.upload-zone { border: 1px dashed var(--border2); border-radius: 6px; padding: 40px; text-align: center; cursor: pointer; transition: all .2s; margin-bottom: 16px; }
+.upload-zone:hover, .upload-zone.drag { border-color: var(--green); background: rgba(0,255,136,.03); }
+.upload-zone input { display: none; }
+.upload-icon { font-size: 28px; margin-bottom: 12px; opacity: .4; font-family: var(--mono); color: var(--green); }
+.upload-text { font-size: 14px; color: var(--text2); }
+.upload-hint { font-size: 12px; color: var(--text3); margin-top: 4px; font-family: var(--mono); }
+
+/* Buttons */
+.btn { display: inline-flex; align-items: center; gap: 8px; font-family: var(--sans); font-size: 13px; font-weight: 500; padding: 10px 20px; border-radius: 4px; border: 1px solid; cursor: pointer; transition: all .15s; letter-spacing: .02em; }
+.btn-green { background: rgba(0,255,136,.1); border-color: var(--green2); color: var(--green); }
+.btn-green:hover { background: rgba(0,255,136,.18); }
+.btn-ghost { background: transparent; border-color: var(--border2); color: var(--text2); }
+.btn-ghost:hover { border-color: var(--text2); color: var(--text); }
+.btn:disabled { opacity: .4; cursor: not-allowed; }
+
+/* Input */
+.input-row { display: flex; gap: 10px; margin-bottom: 16px; }
+input[type=text] { flex: 1; background: var(--bg3); border: 1px solid var(--border); border-radius: 4px; padding: 10px 14px; color: var(--text); font-family: var(--mono); font-size: 13px; outline: none; transition: border-color .15s; }
+input[type=text]:focus { border-color: var(--green2); }
+input[type=text]::placeholder { color: var(--text3); }
+
+/* Alert list */
+.alert-list { display: flex; flex-direction: column; gap: 8px; }
+.alert-item { background: var(--bg3); border: 1px solid var(--border); border-radius: 4px; border-left: 3px solid; padding: 14px 16px; }
+.alert-item.CRITICAL { border-left-color: var(--red); }
+.alert-item.HIGH     { border-left-color: var(--amber); }
+.alert-item.MEDIUM   { border-left-color: var(--blue); }
+.alert-item.LOW      { border-left-color: var(--green2); }
+.alert-top   { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+.sev-badge   { font-size: 10px; font-family: var(--mono); font-weight: 600; padding: 2px 8px; border-radius: 2px; letter-spacing: .08em; }
+.sev-CRITICAL{ background: var(--red-dim);   color: var(--red);   }
+.sev-HIGH    { background: var(--amber-dim); color: var(--amber); }
+.sev-MEDIUM  { background: var(--blue-dim);  color: var(--blue);  }
+.sev-LOW     { background: var(--green-dim); color: var(--green); }
+.alert-type  { font-size: 13px; font-weight: 500; color: var(--text); }
+.alert-meta  { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+.meta-chip   { font-size: 11px; font-family: var(--mono); color: var(--text3); background: var(--bg2); padding: 2px 8px; border-radius: 2px; }
+.meta-chip.hl{ color: var(--amber); background: var(--amber-dim); }
+
+/* Port table */
+.port-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.port-table th { text-align: left; font-size: 10px; font-family: var(--mono); color: var(--text3); letter-spacing: .1em; padding: 0 12px 10px 0; border-bottom: 1px solid var(--border); }
+.port-table td { padding: 11px 12px 11px 0; border-bottom: 1px solid var(--border); vertical-align: middle; font-family: var(--mono); font-size: 12px; color: var(--text2); }
+.port-table tr:last-child td { border-bottom: none; }
+
+/* Terminal output */
+.terminal { background: var(--bg); border: 1px solid var(--border); border-radius: 4px; padding: 20px; font-family: var(--mono); font-size: 12px; line-height: 1.9; color: var(--text2); max-height: 280px; overflow-y: auto; }
+.t-green { color: var(--green); }
+.t-red   { color: var(--red); }
+.t-amber { color: var(--amber); }
+.t-dim   { color: var(--text3); }
+.t-cursor { display: inline-block; width: 8px; height: 14px; background: var(--green); animation: blink .9s step-end infinite; vertical-align: text-bottom; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+/* Spinner */
+.spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid var(--border2); border-top-color: var(--green); border-radius: 50%; animation: spin .6s linear infinite; }
+@keyframes spin { to{transform:rotate(360deg)} }
+
+/* Filter pills */
+.filter-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px; }
+.fpill { font-size: 11px; font-family: var(--mono); padding: 4px 12px; border-radius: 2px; border: 1px solid var(--border); color: var(--text3); cursor: pointer; background: transparent; transition: all .12s; letter-spacing: .04em; }
+.fpill:hover { border-color: var(--border2); color: var(--text2); }
+.fpill.on { border-color: var(--green2); color: var(--green); background: var(--green-dim); }
+
+/* Threat intel table */
+.ti-row { display: flex; align-items: center; gap: 0; border-bottom: 1px solid var(--border); padding: 10px 0; }
+.ti-row:last-child { border-bottom: none; }
+.ti-ip  { font-family: var(--mono); font-size: 13px; color: var(--text); width: 160px; flex-shrink: 0; }
+.ti-cat { font-size: 12px; color: var(--text2); flex: 1; }
+.ti-src { font-size: 11px; font-family: var(--mono); color: var(--text3); flex: 1; }
+.ti-cc  { font-size: 11px; font-family: var(--mono); color: var(--text3); width: 40px; text-align: right; }
+
+/* Dashboard overview */
+.overview-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px; }
+.mini-bar { display: flex; flex-direction: column; gap: 6px; }
+.bar-row  { display: flex; align-items: center; gap: 10px; font-size: 12px; font-family: var(--mono); }
+.bar-label { width: 100px; color: var(--text3); font-size: 11px; }
+.bar-track { flex: 1; height: 4px; background: var(--bg3); border-radius: 2px; overflow: hidden; }
+.bar-fill  { height: 100%; border-radius: 2px; transition: width 1s ease; }
+.bar-val   { width: 36px; text-align: right; color: var(--text2); font-size: 11px; }
+
+/* Empty state */
+.empty { text-align: center; padding: 48px 0; color: var(--text3); font-family: var(--mono); font-size: 13px; }
+.empty-icon { font-size: 32px; margin-bottom: 12px; opacity: .3; }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+/* Responsive */
+@media(max-width:900px){
+  .sidebar { width: 60px; }
+  .nav-item span, .logo-name, .logo-sub, .logo-mark, .nav-section, .status-bar span { display: none; }
+  .nav-icon { width: 100%; text-align: center; font-size: 18px; }
+  .nav-item { justify-content: center; padding: 12px; }
+  .metrics  { grid-template-columns: repeat(2,1fr); }
+  .overview-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<!-- ── SIDEBAR ─────────────────────────────────────────── -->
+<nav class="sidebar">
+  <div class="logo">
+    <div class="logo-mark">// SOC-PLATFORM</div>
+    <div class="logo-name">ThreatWatch</div>
+    <div class="logo-sub">v1.0 · SOC Project</div>
+  </div>
+  <div class="nav">
+    <div class="nav-section">MODULES</div>
+    <div class="nav-item active" onclick="showView('dashboard',this)">
+      <span class="nav-icon">[#]</span><span>Dashboard</span>
+    </div>
+    <div class="nav-item" onclick="showView('log',this)">
+      <span class="nav-icon">[L]</span><span>Log Analyzer</span>
+    </div>
+    <div class="nav-item" onclick="showView('scan',this)">
+      <span class="nav-icon">[N]</span><span>Network Scanner</span>
+    </div>
+    <div class="nav-item" onclick="showView('packet',this)">
+      <span class="nav-icon">[P]</span><span>Packet Analyzer</span>
+    </div>
+    <div class="nav-item" onclick="showView('threat',this)">
+      <span class="nav-icon">[T]</span><span>Threat Intel</span>
+    </div>
+    <div class="nav-section" style="margin-top:8px">REPORTS</div>
+    <div class="nav-item" onclick="showView('report',this)">
+      <span class="nav-icon">[R]</span><span>Incident Report</span>
+    </div>
+  </div>
+  <div class="status-bar">
+    <span class="status-dot"></span><span>System online</span>
+  </div>
+</nav>
+
+<!-- ── MAIN ────────────────────────────────────────────── -->
+<div class="main">
+
+  <!-- Top bar -->
+  <div class="topbar">
+    <div>
+      <div class="topbar-title" id="topbar-title">Dashboard</div>
+      <div class="topbar-sub" id="topbar-sub">Overview · All modules</div>
+    </div>
+    <div class="topbar-meta">
+      <div class="topbar-time" id="clock">--:--:--</div>
+      <div id="topbar-date" style="margin-top:2px"></div>
+    </div>
+  </div>
+
+  <!-- ═══ DASHBOARD ══════════════════════════════════════ -->
+  <div id="view-dashboard" class="view active">
+    <div class="section-head">
+      <div class="section-title">Mission Overview</div>
+      <div class="section-tag">Web- APP</div>
+    </div>
+    <div class="metrics">
+      <div class="metric"><div class="metric-label">LOG ALERTS</div><div class="metric-val red" id="d-log-alerts">—</div></div>
+      <div class="metric"><div class="metric-label">OPEN PORTS</div><div class="metric-val amber" id="d-open-ports">—</div></div>
+      <div class="metric"><div class="metric-label">PKT THREATS</div><div class="metric-val red" id="d-pkt-threats">—</div></div>
+      <div class="metric"><div class="metric-label">THREAT MATCHES</div><div class="metric-val amber" id="d-ti-hits">—</div></div>
+    </div>
+    <div class="overview-grid">
+      <div class="card">
+        <div class="card-title">MODULE STATUS</div>
+        <div class="mini-bar" id="module-status">
+          <div class="bar-row"><span class="bar-label">Log Analyzer</span><div class="bar-track"><div class="bar-fill" style="width:0%;background:var(--green)" id="bar-log"></div></div><span class="bar-val" id="bv-log">idle</span></div>
+          <div class="bar-row"><span class="bar-label">Net Scanner</span><div class="bar-track"><div class="bar-fill" style="width:0%;background:var(--blue)" id="bar-scan"></div></div><span class="bar-val" id="bv-scan">idle</span></div>
+          <div class="bar-row"><span class="bar-label">Pkt Analyzer</span><div class="bar-track"><div class="bar-fill" style="width:0%;background:var(--amber)" id="bar-pkt"></div></div><span class="bar-val" id="bv-pkt">idle</span></div>
+          <div class="bar-row"><span class="bar-label">Threat Intel</span><div class="bar-track"><div class="bar-fill" style="width:0%;background:var(--red)" id="bar-ti"></div></div><span class="bar-val" id="bv-ti">idle</span></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">RECENT ACTIVITY</div>
+        <div id="activity-log" class="terminal" style="max-height:160px;padding:12px">
+          <span class="t-dim">// awaiting module activity ...</span><br>
+          <span class="t-cursor"></span>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">QUICK ACTIONS</div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <button class="btn btn-ghost" onclick="runLogDemo()">Run log demo</button>
+        <button class="btn btn-ghost" onclick="runPacketDemo()">Run packet demo</button>
+        <button class="btn btn-ghost" onclick="showView('scan',document.querySelector('[onclick*=scan]'))">Scan a host</button>
+        <button class="btn btn-ghost" onclick="showView('report',document.querySelector('[onclick*=report]'))">Generate report</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ LOG ANALYZER ═══════════════════════════════════ -->
+  <div id="view-log" class="view">
+    <div class="section-head">
+      <div class="section-title">Log Analyzer</div>
+      <div class="section-tag">MODULE 1</div>
+    </div>
+    <div class="card">
+      <div class="card-title">UPLOAD AUTH.LOG</div>
+      <div class="upload-zone" id="log-drop" onclick="document.getElementById('log-file').click()">
+        <input type="file" id="log-file" accept=".log,.txt" onchange="uploadLog(this.files[0])">
+        <div class="upload-icon">[↑]</div>
+        <div class="upload-text">Click or drag your auth.log file</div>
+        <div class="upload-hint">Supports sshd / sudo / PAM log formats</div>
+      </div>
+      <div style="display:flex;gap:10px">
+        <button class="btn btn-ghost" onclick="runLogDemo()">Run demo log</button>
+        <button class="btn btn-ghost" id="log-export-btn" style="display:none" onclick="exportModule('log')">Export JSON</button>
+      </div>
+    </div>
+    <div id="log-stats" class="metrics" style="display:none"></div>
+    <div id="log-results"></div>
+  </div>
+
+  <!-- ═══ NETWORK SCANNER ════════════════════════════════ -->
+  <div id="view-scan" class="view">
+    <div class="section-head">
+      <div class="section-title">Network Scanner</div>
+      <div class="section-tag">MODULE 2</div>
+    </div>
+    <div class="card">
+      <div class="card-title">TARGET</div>
+      <div class="input-row">
+        <input type="text" id="scan-target" placeholder="192.168.1.1  or  localhost" onkeydown="if(event.key==='Enter')startScan()">
+        <button class="btn btn-green" id="scan-btn" onclick="startScan()">Scan</button>
+      </div>
+      <div style="font-size:11px;color:var(--text3);font-family:var(--mono)">// Scans top 24 common ports. Only scan systems you own.</div>
+    </div>
+    <div id="scan-terminal" class="terminal" style="margin-bottom:20px;display:none"></div>
+    <div id="scan-results"></div>
+  </div>
+
+  <!-- ═══ PACKET ANALYZER ════════════════════════════════ -->
+  <div id="view-packet" class="view">
+    <div class="section-head">
+      <div class="section-title">Packet Analyzer</div>
+      <div class="section-tag">MODULE 3</div>
+    </div>
+    <div class="card">
+      <div class="card-title">UPLOAD PCAP / LIVE DEMO</div>
+      <div class="upload-zone" id="pkt-drop" onclick="document.getElementById('pkt-file').click()">
+        <input type="file" id="pkt-file" accept=".pcap,.pcapng,.cap" onchange="uploadPcap(this.files[0])">
+        <div class="upload-icon">[↑]</div>
+        <div class="upload-text">Upload a .pcap file from Wireshark</div>
+        <div class="upload-hint">.pcap · .pcapng · .cap</div>
+      </div>
+      <div style="display:flex;gap:10px">
+        <button class="btn btn-ghost" onclick="runPacketDemo()">Run built-in demo</button>
+        <button class="btn btn-ghost" id="pkt-export-btn" style="display:none" onclick="exportModule('packet')">Export JSON</button>
+      </div>
+    </div>
+    <div id="pkt-stats" class="metrics" style="display:none"></div>
+    <div id="pkt-filter" class="filter-row" style="display:none"></div>
+    <div id="pkt-results"></div>
+  </div>
+
+  <!-- ═══ THREAT INTELLIGENCE ════════════════════════════ -->
+  <div id="view-threat" class="view">
+    <div class="section-head">
+      <div class="section-title">Threat Intelligence</div>
+      <div class="section-tag">MODULE 4</div>
+    </div>
+    <div class="card">
+      <div class="card-title">IP LOOKUP</div>
+      <div style="margin-bottom:12px">
+        <textarea id="ti-ips" placeholder="Enter IPs to check (one per line)&#10;192.168.1.105&#10;45.33.32.156&#10;203.0.113.9" style="width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:4px;padding:12px;color:var(--text);font-family:var(--mono);font-size:12px;resize:vertical;min-height:100px;outline:none"></textarea>
+      </div>
+      <div style="display:flex;gap:10px">
+        <button class="btn btn-green" onclick="checkThreat()">Check IPs</button>
+        <button class="btn btn-ghost" onclick="document.getElementById('ti-ips').value='192.168.1.105\n45.33.32.156\n203.0.113.9\n10.0.0.99\n8.8.8.8'">Load demo IPs</button>
+      </div>
+    </div>
+    <div id="ti-results"></div>
+  </div>
+
+  <!-- ═══ INCIDENT REPORT ════════════════════════════════ -->
+  <div id="view-report" class="view">
+    <div class="section-head">
+      <div class="section-title">Incident Report</div>
+      <div class="section-tag">EXPORT</div>
+    </div>
+    <div class="card">
+      <div class="card-title">REPORT SUMMARY</div>
+      <div id="report-body">
+        <div class="empty"><div class="empty-icon">[!]</div>Run at least one module to generate a report.</div>
+      </div>
+      <div style="margin-top:20px;display:flex;gap:10px" id="report-actions" style="display:none">
+        <button class="btn btn-green" id="dl-json-btn" onclick="downloadReport()" disabled>Download JSON report</button>
+        <button class="btn btn-ghost" onclick="printReport()">Print / Save PDF</button>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /main -->
+</div><!-- /shell -->
+
+<script>
+// ─── State ─────────────────────────────────────────────────
+const STATE = { log: null, scan: null, packet: null, threat: null };
+
+// ─── Clock ─────────────────────────────────────────────────
+function tick() {
+  const now = new Date();
+  document.getElementById('clock').textContent = now.toTimeString().slice(0,8);
+  document.getElementById('topbar-date').textContent = now.toDateString();
+}
+tick(); setInterval(tick, 1000);
+
+// ─── Navigation ────────────────────────────────────────────
+const TITLES = {
+  dashboard: ['Dashboard','Overview · All modules'],
+  log:       ['Log Analyzer','Module 1 · SSH / sudo / PAM brute-force detection'],
+  scan:      ['Network Scanner','Module 2 · TCP port scan · banner grabbing'],
+  packet:    ['Packet Analyzer','Module 3 · SQLi / XSS / ReverseShell detection'],
+  threat:    ['Threat Intelligence','Module 4 · IP reputation · blocklist matching'],
+  report:    ['Incident Report','Export full investigation findings'],
+};
+
+function showView(name, el) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('view-'+name).classList.add('active');
+  if (el) el.closest('.nav-item').classList.add('active');
+  const [t, s] = TITLES[name] || [name, ''];
+  document.getElementById('topbar-title').textContent = t;
+  document.getElementById('topbar-sub').textContent   = s;
+  if (name === 'report') buildReport();
+}
+
+// ─── Activity log ──────────────────────────────────────────
+function logActivity(msg, cls='') {
+  const el   = document.getElementById('activity-log');
+  const line = document.createElement('div');
+  line.innerHTML = `<span class="t-dim">${new Date().toTimeString().slice(0,8)}</span>  <span class="${cls}">${msg}</span>`;
+  el.insertBefore(line, el.firstChild);
+  if (el.children.length > 20) el.removeChild(el.lastChild);
+}
+
+// ─── Severity helpers ──────────────────────────────────────
+function sevBadge(s) {
+  return `<span class="sev-badge sev-${s}">${s}</span>`;
+}
+function severityColor(s) {
+  return {CRITICAL:'var(--red)',HIGH:'var(--amber)',MEDIUM:'var(--blue)',LOW:'var(--green)'}[s] || 'var(--text3)';
+}
+
+// ══════════════════════════════════════════════════════════
+// MODULE 1 — LOG ANALYZER
+// ══════════════════════════════════════════════════════════
+function uploadLog(file) {
+  if (!file) return;
+  const fd = new FormData();
+  fd.append('file', file);
+  runLog('/api/log/analyze', fd);
+}
+
+function runLogDemo() {
+  showView('log', document.querySelector('[onclick*="log"]'));
+  runLog('/api/log/demo', null);
+}
+
+function runLog(url, body) {
+  document.getElementById('log-results').innerHTML = `<div style="padding:20px;font-family:var(--mono);color:var(--green)"><span class="spinner"></span>  Parsing log file ...</div>`;
+  const opts = body ? { method:'POST', body } : { method:'GET' };
+  fetch(url, opts)
+    .then(r => r.json())
+    .then(data => {
+      STATE.log = data;
+      renderLog(data);
+      updateDashboard();
+      logActivity(`Log analysis complete — ${data.alerts.length} alert(s)`, data.alerts.length ? 't-red' : 't-green');
+    })
+    .catch(e => showError('log-results', e));
+}
+
+function renderLog(data) {
+  // Stats
+  const stats = document.getElementById('log-stats');
+  stats.style.display = 'grid';
+  stats.innerHTML = `
+    <div class="metric"><div class="metric-label">LINES PARSED</div><div class="metric-val">${data.total_lines}</div></div>
+    <div class="metric"><div class="metric-label">UNIQUE IPs</div><div class="metric-val">${data.unique_ips}</div></div>
+    <div class="metric"><div class="metric-label">FAILED LOGINS</div><div class="metric-val amber">${data.total_failures}</div></div>
+    <div class="metric"><div class="metric-label">ALERTS</div><div class="metric-val red">${data.alerts.length}</div></div>
+  `;
+  document.getElementById('log-export-btn').style.display = 'inline-flex';
+
+  if (!data.alerts.length) {
+    document.getElementById('log-results').innerHTML = `<div class="empty"><div class="empty-icon">[✓]</div>No threats detected. Log appears clean.</div>`;
+    return;
+  }
+
+  const html = data.alerts.map(a => `
+    <div class="alert-item ${a.severity}">
+      <div class="alert-top">${sevBadge(a.severity)}<span class="alert-type">${a.type.replace(/_/g,' ')}</span></div>
+      <div class="alert-meta">
+        <span class="meta-chip hl">${a.ip}</span>
+        ${a.peak_attempts  ? `<span class="meta-chip">${a.peak_attempts} peak attempts</span>` : ''}
+        ${a.total_failures ? `<span class="meta-chip">${a.total_failures} total failures</span>` : ''}
+        ${a.first_seen     ? `<span class="meta-chip">first: ${a.first_seen}</span>` : ''}
+        ${a.last_seen      ? `<span class="meta-chip">last: ${a.last_seen}</span>` : ''}
+        ${a.success_at     ? `<span class="meta-chip t-red">success: ${a.success_at}</span>` : ''}
+        ${a.count          ? `<span class="meta-chip">${a.count} invalid users</span>` : ''}
+        ${a.description    ? `<span class="meta-chip">${a.description}</span>` : ''}
+      </div>
+    </div>
+  `).join('');
+  document.getElementById('log-results').innerHTML = `<div class="card"><div class="card-title">ALERTS — ${data.alerts.length} FOUND</div><div class="alert-list">${html}</div></div>`;
+}
+
+// ══════════════════════════════════════════════════════════
+// MODULE 2 — NETWORK SCANNER
+// ══════════════════════════════════════════════════════════
+function startScan() {
+  const target = document.getElementById('scan-target').value.trim();
+  if (!target) return;
+
+  const term = document.getElementById('scan-terminal');
+  term.style.display = 'block';
+  term.innerHTML = `<span class="t-dim">// initiating scan on ${target} ...</span><br>`;
+  document.getElementById('scan-results').innerHTML = '';
+  document.getElementById('scan-btn').disabled = true;
+
+  const addLine = (html) => { term.innerHTML += html + '<br>'; term.scrollTop = term.scrollHeight; };
+  addLine(`<span class="t-green">→</span> target   : ${target}`);
+  addLine(`<span class="t-green">→</span> ports    : top 24 common`);
+  addLine(`<span class="t-green">→</span> threads  : 100`);
+  addLine(`<span class="t-dim">// scanning ...</span>`);
+
+  fetch('/api/scan', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ target })
+  })
+    .then(r => r.json())
+    .then(data => {
+      if (data.error) throw new Error(data.error);
+      STATE.scan = data;
+      addLine(`<span class="t-green">✓</span> done — ${data.open_count} open port(s) found`);
+      if (data.critical_count) addLine(`<span class="t-red">⚠ ${data.critical_count} CRITICAL finding(s)</span>`);
+      renderScan(data);
+      updateDashboard();
+      logActivity(`Scan ${target} — ${data.open_count} ports, ${data.critical_count} critical`, data.critical_count ? 't-red' : 't-green');
+    })
+    .catch(e => {
+      addLine(`<span class="t-red">ERROR: ${e.message}</span>`);
+    })
+    .finally(() => { document.getElementById('scan-btn').disabled = false; });
+}
+
+function renderScan(data) {
+  if (!data.ports.length) {
+    document.getElementById('scan-results').innerHTML = `<div class="empty"><div class="empty-icon">[✓]</div>No open ports found.</div>`;
+    return;
+  }
+  const rows = data.ports.map(p => `
+    <tr>
+      <td style="color:${severityColor(p.risk)};font-weight:500">${p.port}</td>
+      <td>${p.service}</td>
+      <td>${sevBadge(p.risk)}</td>
+      <td style="color:var(--text2)">${p.reason}</td>
+      <td style="color:var(--text3)">${p.banner || '—'}</td>
+    </tr>
+  `).join('');
+  document.getElementById('scan-results').innerHTML = `
+    <div class="card">
+      <div class="card-title">RESULTS — ${data.host} — ${data.open_count} OPEN PORT(S)</div>
+      <div style="overflow-x:auto">
+        <table class="port-table">
+          <thead><tr><th>PORT</th><th>SERVICE</th><th>RISK</th><th style="min-width:200px">FINDING</th><th>BANNER</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+    </div>`;
+}
+
+// ══════════════════════════════════════════════════════════
+// MODULE 3 — PACKET ANALYZER
+// ══════════════════════════════════════════════════════════
+function uploadPcap(file) {
+  if (!file) return;
+  const fd = new FormData();
+  fd.append('file', file);
+  runPacket('/api/packet/analyze', fd);
+}
+
+function runPacketDemo() {
+  showView('packet', document.querySelector('[onclick*="packet"]'));
+  runPacket('/api/packet/demo', null);
+}
+
+function runPacket(url, body) {
+  document.getElementById('pkt-results').innerHTML = `<div style="padding:20px;font-family:var(--mono);color:var(--green)"><span class="spinner"></span>  Analyzing packets ...</div>`;
+  const opts = body ? { method:'POST', body } : { method:'GET' };
+  fetch(url, opts)
+    .then(r => r.json())
+    .then(data => {
+      STATE.packet = data;
+      renderPacket(data);
+      updateDashboard();
+      logActivity(`Packet analysis — ${data.total_findings} threat(s) in ${data.total_packets} pkt(s)`, data.total_findings ? 't-amber' : 't-green');
+    })
+    .catch(e => showError('pkt-results', e));
+}
+
+let pktFilter = 'ALL';
+function renderPacket(data) {
+  const stats = document.getElementById('pkt-stats');
+  stats.style.display = 'grid';
+  stats.innerHTML = `
+    <div class="metric"><div class="metric-label">PACKETS</div><div class="metric-val">${data.total_packets}</div></div>
+    <div class="metric"><div class="metric-label">THREATS</div><div class="metric-val red">${data.total_findings}</div></div>
+    <div class="metric"><div class="metric-label">ATTACK IPs</div><div class="metric-val amber">${(data.attack_ips||[]).length}</div></div>
+    <div class="metric"><div class="metric-label">DECODED</div><div class="metric-val">${data.findings.filter(f=>f.decoded).length}</div></div>
+  `;
+  document.getElementById('pkt-export-btn').style.display = 'inline-flex';
+
+  const cats = ['ALL', ...new Set(data.findings.map(f => f.category))];
+  const filter = document.getElementById('pkt-filter');
+  filter.style.display = 'flex';
+  filter.innerHTML = cats.map(c => `<button class="fpill ${c==='ALL'?'on':''}" onclick="setPktFilter('${c}',this)">${c}</button>`).join('');
+
+  renderPktList(data.findings);
+}
+
+function setPktFilter(cat, btn) {
+  pktFilter = cat;
+  document.querySelectorAll('#pkt-filter .fpill').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  renderPktList(STATE.packet.findings);
+}
+
+function renderPktList(findings) {
+  const f = pktFilter === 'ALL' ? findings : findings.filter(x => x.category === pktFilter);
+  if (!f.length) {
+    document.getElementById('pkt-results').innerHTML = `<div class="empty"><div class="empty-icon">[✓]</div>No findings for this category.</div>`;
+    return;
+  }
+  const html = f.map(x => `
+    <div class="alert-item ${x.severity}">
+      <div class="alert-top">${sevBadge(x.severity)}<span class="sev-badge" style="background:var(--bg3);color:var(--text3);border:1px solid var(--border)">${x.category}</span><span class="alert-type" style="font-size:12px">${x.description}</span></div>
+      <div class="alert-meta">
+        <span class="meta-chip hl">${x.src}</span>
+        <span class="meta-chip">→ ${x.dst}</span>
+        ${x.decoded ? `<span class="meta-chip" style="color:var(--amber);background:var(--amber-dim)">base64 decoded</span>` : ''}
+        <span class="meta-chip" style="color:var(--text3)">${x.match}</span>
+      </div>
+    </div>
+  `).join('');
+  document.getElementById('pkt-results').innerHTML = `<div class="card"><div class="card-title">FINDINGS — ${f.length}</div><div class="alert-list">${html}</div></div>`;
+}
+
+// ══════════════════════════════════════════════════════════
+// MODULE 4 — THREAT INTEL
+// ══════════════════════════════════════════════════════════
+function checkThreat() {
+  const raw = document.getElementById('ti-ips').value.trim();
+  const ips = raw.split('\n').map(s=>s.trim()).filter(Boolean);
+  if (!ips.length) return;
+
+  document.getElementById('ti-results').innerHTML = `<div style="padding:20px;font-family:var(--mono);color:var(--green)"><span class="spinner"></span>  Checking ${ips.length} IP(s) ...</div>`;
+
+  fetch('/api/threat/check', {
+    method: 'POST',
+    headers: { 'Content-Type':'application/json' },
+    body: JSON.stringify({ ips })
+  })
+    .then(r => r.json())
+    .then(data => {
+      STATE.threat = data;
+      renderThreat(data);
+      updateDashboard();
+      logActivity(`Threat Intel — ${data.matched}/${data.total_checked} IPs matched`, data.critical ? 't-red' : 't-amber');
+    })
+    .catch(e => showError('ti-results', e));
+}
+
+function renderThreat(data) {
+  const rows = data.results.map(r => `
+    <div class="alert-item ${r.threat==='CRITICAL'?'CRITICAL':r.threat==='HIGH'?'HIGH':r.status==='MATCH'?'MEDIUM':''}">
+      <div class="alert-top">${sevBadge(r.threat)}<span class="alert-type">${r.ip}</span>${r.status==='MATCH'?'<span class="meta-chip hl" style="margin-left:auto">MATCH</span>':'<span class="meta-chip" style="margin-left:auto;color:var(--green)">CLEAN</span>'}</div>
+      <div class="alert-meta">
+        <span class="meta-chip">${r.category}</span>
+        <span class="meta-chip">${r.source}</span>
+        <span class="meta-chip">${r.country}</span>
+      </div>
+    </div>
+  `).join('');
+  document.getElementById('ti-results').innerHTML = `
+    <div class="metrics" style="margin-bottom:20px">
+      <div class="metric"><div class="metric-label">CHECKED</div><div class="metric-val">${data.total_checked}</div></div>
+      <div class="metric"><div class="metric-label">MATCHED</div><div class="metric-val amber">${data.matched}</div></div>
+      <div class="metric"><div class="metric-label">CRITICAL</div><div class="metric-val red">${data.critical}</div></div>
+      <div class="metric"><div class="metric-label">CLEAN</div><div class="metric-val green">${data.total_checked - data.matched}</div></div>
+    </div>
+    <div class="card"><div class="card-title">IP REPUTATION RESULTS</div><div class="alert-list">${rows}</div></div>`;
+}
+
+// ══════════════════════════════════════════════════════════
+// DASHBOARD UPDATE
+// ══════════════════════════════════════════════════════════
+function updateDashboard() {
+  if (STATE.log)    { document.getElementById('d-log-alerts').textContent = STATE.log.alerts.length; document.getElementById('bar-log').style.width = Math.min(100, STATE.log.alerts.length*10)+'%'; document.getElementById('bv-log').textContent = STATE.log.alerts.length+' alerts'; }
+  if (STATE.scan)   { document.getElementById('d-open-ports').textContent = STATE.scan.open_count;   document.getElementById('bar-scan').style.width = Math.min(100, STATE.scan.open_count*8)+'%'; document.getElementById('bv-scan').textContent = STATE.scan.open_count+' ports'; }
+  if (STATE.packet) { document.getElementById('d-pkt-threats').textContent = STATE.packet.total_findings; document.getElementById('bar-pkt').style.width = Math.min(100, STATE.packet.total_findings*12)+'%'; document.getElementById('bv-pkt').textContent = STATE.packet.total_findings+' threats'; }
+  if (STATE.threat) { document.getElementById('d-ti-hits').textContent = STATE.threat.matched; document.getElementById('bar-ti').style.width = Math.min(100, STATE.threat.matched*15)+'%'; document.getElementById('bv-ti').textContent = STATE.threat.matched+' matches'; }
+  document.getElementById('dl-json-btn').disabled = false;
+}
+
+// ══════════════════════════════════════════════════════════
+// INCIDENT REPORT
+// ══════════════════════════════════════════════════════════
+function buildReport() {
+  const hasData = STATE.log || STATE.scan || STATE.packet || STATE.threat;
+  if (!hasData) return;
+
+  const ts    = new Date().toLocaleString();
+  let total   = 0;
+  let html    = `<div style="font-family:var(--mono);font-size:12px;color:var(--text3);margin-bottom:20px">Generated: ${ts}</div>`;
+
+  if (STATE.log) {
+    total += STATE.log.alerts.length;
+    html += section('LOG ANALYSIS', STATE.log.alerts.length + ' alert(s)', STATE.log.alerts.map(a =>
+      `<div style="padding:8px 0;border-bottom:1px solid var(--border);display:flex;gap:12px;align-items:center">${sevBadge(a.severity)}<span style="font-family:var(--mono);font-size:12px;color:var(--text)">${a.ip}</span><span style="font-size:12px;color:var(--text3)">${a.type.replace(/_/g,' ')}</span></div>`
+    ).join(''));
+  }
+  if (STATE.scan) {
+    html += section('NETWORK SCAN — '+STATE.scan.host, STATE.scan.open_count + ' open port(s)', STATE.scan.ports.map(p =>
+      `<div style="padding:8px 0;border-bottom:1px solid var(--border);display:flex;gap:12px;align-items:center">${sevBadge(p.risk)}<span style="font-family:var(--mono);font-size:13px;color:var(--text)">${p.port}</span><span style="font-size:12px;color:var(--text3)">${p.service} — ${p.reason}</span></div>`
+    ).join(''));
+  }
+  if (STATE.packet) {
+    total += STATE.packet.total_findings;
+    html += section('PACKET ANALYSIS', STATE.packet.total_findings + ' threat(s)', STATE.packet.findings.map(f =>
+      `<div style="padding:8px 0;border-bottom:1px solid var(--border);display:flex;gap:12px;align-items:flex-start">${sevBadge(f.severity)}<div><div style="font-size:12px;color:var(--text)">${f.category} — ${f.description}</div><div style="font-family:var(--mono);font-size:11px;color:var(--text3);margin-top:2px">${f.src} → ${f.dst}</div></div></div>`
+    ).join(''));
+  }
+  if (STATE.threat) {
+    html += section('THREAT INTELLIGENCE', STATE.threat.matched + ' IP match(es)', STATE.threat.results.filter(r=>r.status==='MATCH').map(r =>
+      `<div style="padding:8px 0;border-bottom:1px solid var(--border);display:flex;gap:12px;align-items:center">${sevBadge(r.threat)}<span style="font-family:var(--mono);font-size:13px;color:var(--text)">${r.ip}</span><span style="font-size:12px;color:var(--text3)">${r.category} · ${r.source}</span></div>`
+    ).join(''));
+  }
+
+  document.getElementById('report-body').innerHTML = html;
+  document.getElementById('report-actions').style.display = 'flex';
+  document.getElementById('dl-json-btn').disabled = false;
+}
+
+function section(title, sub, content) {
+  return `<div style="margin-bottom:24px">
+    <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:12px">
+      <div style="font-family:var(--mono);font-size:11px;letter-spacing:.1em;color:var(--text3)">${title}</div>
+      <div style="font-size:12px;color:var(--green);font-family:var(--mono)">${sub}</div>
+    </div>
+    ${content || '<div style="color:var(--text3);font-size:12px;padding:8px 0">No findings.</div>'}
+  </div>`;
+}
+
+function downloadReport() {
+  fetch('/api/report/export', {
+    method: 'POST',
+    headers: { 'Content-Type':'application/json' },
+    body: JSON.stringify({ log: STATE.log, scan: STATE.scan, packet: STATE.packet, threat: STATE.threat, generated_at: new Date().toISOString() })
+  }).then(r=>r.json()).then(d => {
+    logActivity('Report exported: '+d.file, 't-green');
+    window.open('/reports/'+d.file, '_blank');
+  });
+}
+
+function printReport() { window.print(); }
+
+function exportModule(mod) {
+  const data = STATE[mod];
+  if (!data) return;
+  const blob = new Blob([JSON.stringify(data,null,2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `soc_${mod}_${Date.now()}.json`;
+  a.click();
+}
+
+// ─── Drag-and-drop ─────────────────────────────────────────
+['log-drop','pkt-drop'].forEach(id => {
+  const el = document.getElementById(id);
+  el.addEventListener('dragover', e => { e.preventDefault(); el.classList.add('drag'); });
+  el.addEventListener('dragleave', ()=> el.classList.remove('drag'));
+  el.addEventListener('drop', e => {
+    e.preventDefault(); el.classList.remove('drag');
+    const file = e.dataTransfer.files[0];
+    if (id === 'log-drop') uploadLog(file);
+    else uploadPcap(file);
+  });
+});
+
+function showError(elId, e) {
+  document.getElementById(elId).innerHTML = `<div class="empty"><div class="empty-icon">[✗]</div>Error: ${e.message}<br><span style="font-size:11px">Is the Flask server running?</span></div>`;
+}
+</script>
+</body>
+</html>

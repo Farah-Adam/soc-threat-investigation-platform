@@ -1,0 +1,68 @@
+{
+  "total_lines": 69,
+  "unique_ips": 8,
+  "total_failures": 53,
+  "total_successes": 4,
+  "alerts": [
+    {
+      "ip": "192.168.1.105",
+      "type": "BRUTE_FORCE",
+      "severity": "CRITICAL",
+      "peak_attempts": 20,
+      "total_failures": 20,
+      "first_seen": "02:10:01",
+      "last_seen": "02:10:40"
+    },
+    {
+      "ip": "203.0.113.9",
+      "type": "BRUTE_FORCE",
+      "severity": "CRITICAL",
+      "peak_attempts": 20,
+      "total_failures": 20,
+      "first_seen": "05:30:00",
+      "last_seen": "05:30:19"
+    },
+    {
+      "ip": "192.168.1.105",
+      "type": "BRUTE_FORCE_SUCCESS",
+      "severity": "CRITICAL",
+      "failures_before": 20,
+      "success_at": "02:10:42",
+      "description": "Login succeeded after 20 failures"
+    },
+    {
+      "ip": "45.33.32.156",
+      "type": "BRUTE_FORCE",
+      "severity": "HIGH",
+      "peak_attempts": 5,
+      "total_failures": 5,
+      "first_seen": "03:00:24",
+      "last_seen": "03:00:32"
+    },
+    {
+      "ip": "10.0.0.99",
+      "type": "BRUTE_FORCE",
+      "severity": "HIGH",
+      "peak_attempts": 6,
+      "total_failures": 6,
+      "first_seen": "04:15:00",
+      "last_seen": "04:15:20"
+    },
+    {
+      "ip": "45.33.32.156",
+      "type": "INVALID_USER_SCAN",
+      "severity": "HIGH",
+      "count": 12
+    }
+  ],
+  "all_ips": [
+    "45.33.32.156",
+    "172.16.0.5",
+    "203.0.113.9",
+    "192.168.1.105",
+    "198.51.100.99",
+    "198.51.100.1",
+    "198.51.100.2",
+    "10.0.0.99"
+  ]
+}
